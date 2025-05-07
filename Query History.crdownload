@@ -1,0 +1,12 @@
+// Using IndexedDB
+const db = new Dexie('DnsHistory');
+db.version(1).stores({
+  queries: '++id,query,type,result,timestamp'
+});
+
+function saveQuery(queryData) {
+  return db.queries.add({
+    ...queryData,
+    timestamp: Date.now()
+  });
+}
