@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="DNS Lookup Tool - Query and analyze domain name system records efficiently">
+    <title>DNS Lookup Tool</title>
+    <style>
+        :root {
+            --primary: #3498db;
+            --success: #2ecc71;
+            --warning: #f39c12;
+            --danger: #e74c3c;
+            --light: #f8f9fa;
+            --dark: #343a40;
+            --gray: #6c757d;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+            line-height: 1.6;
+            color: var(--dark);
+            background-color: #f5f7fa;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        header .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .logo svg {
+            width: 30px;
+            height: 30px;
+        }
+        
+        nav a {
+            margin-left: 20px;
+            color: var(--dark);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        
+        nav a:hover {
+            color: var(--primary);
+        }
+        
+        .main-content {
+            margin-top: 40px;
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        
+        h1, h2, h3 {
+            margin-bottom: 20px;
+            color: var(--dark);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        
+        input:focus, select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+            outline: none;
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .input-group > div {
+            flex: 1;
+        }
+        
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn:active {
+            transform: translateY(1px);
+        }
+        
+        .btn-block {
+            display: block;
+            width: 100%;
+        }
+        
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+        
+        .btn-secondary {
+            background-color: var(--gray);
+        }
+        
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+        
+        .btn-danger {
+            background-color: var(--danger);
+        }
+        
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        
+        .btn-icon {
+            padding: 10px;
+        }
+        
+        .validation-message {
+            display: none;
+            color: var(--danger);
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        
+        #result-area {
+            display: none;
+            margin-top: 30px;
+        }
+        
+        .result-card {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid var(--primary);
+        }
+        
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .result-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--dark);
+            margin: 0;
+        }
+        
+        .result-timestamp {
+            color: var(--gray);
+            font-size: 14px;
+        }
+        
+        .result-data {
+            font-family: monospace;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        
+        .data-table th {
+            text-align: left;
+            padding: 10px;
+            background-color: #f1f3f5;
+            font-weight: 600;
+        }
+        
+        .data-table td {
+            padding: 10px;
+            border-top: 1px solid #eee;
+        }
+        
+        .table-striped tr:nth-child(odd) {
+            background-color: #f8f9fa;
+        }
+        
+        .record-item {
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .record-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            font-size: 12px;
+            font-weight: 600;
+            border-radius: 4px;
+            margin-right: 5px;
+        }
+        
+        .badge-primary {
+            background-color: rgba(52, 152, 219, 0.15);
+            color: var(--primary);
+        }
+        
+        .badge-success {
+            background-color: rgba(46, 204, 113, 0.15);
+            color: var(--success);
+        }
+        
+        .badge-warning {
+            background-color: rgba(243, 156, 18, 0.15);
+            color: var(--warning);
+        }
+        
+        .badge-danger {
+            background-color: rgba(231, 76, 60, 0.15);
+            color: var(--danger);
+        }
+        
+        .loader {
+            display: none;
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(52, 152, 219, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s ease-in-out infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            transition: background-color 0.2s;
+            cursor: pointer;
+        }
+        
+        .history-item:hover {
+            background-color: #e9ecef;
+        }
+        
+        .history-details {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .history-domain {
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+        
+        .history-meta {
+            display: flex;
+            gap: 10px;
+            color: var(--gray);
+            font-size: 14px;
+        }
+        
+        .history-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .tooltip .tooltip-text {
+            visibility: hidden;
+            width: 200px;
+            background-color: var(--dark);
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 14px;
+        }
+        
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .tab.active {
+            border-bottom-color: var(--primary);
+            color: var(--primary);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .dnssec-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 15px;
+        }
+        
+        .dnssec-secure {
+            background-color: rgba(46, 204, 113, 0.1);
+            color: var(--success);
+        }
+        
+        .dnssec-insecure {
+            background-color: rgba(231, 76, 60, 0.1);
+            color: var(--danger);
+        }
+        
+        .collapsible {
+            cursor: pointer;
+            padding: 15px;
+            width: 100%;
+            border: none;
+            text-align: left;
+            outline: none;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            font-weight: 500;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .collapsible:after {
+            content: '+';
+            font-weight: bold;
+            font-size: 18px;
+        }
+        
+        .active-collapse:after {
+            content: '-';
+        }
+        
+        .collapse-content {
+            padding: 0 15px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.2s ease-out;
+            background-color: white;
+        }
+        
+        .export-options {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        footer {
+            background-color: white;
+            padding: 40px 0;
+            margin-top: 60px;
+            border-top: 1px solid #eee;
+        }
+        
+        footer .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .footer-links a {
+            margin-left: 20px;
+            color: var(--gray);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        
+        .footer-links a:hover {
+            color: var(--primary);
+        }
+        
+        @media (max-width: 768px) {
+            .input-group {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            header .container {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            nav {
+                margin-top: 10px;
+                display: flex;
+                width: 100%;
+                justify-content: center;
+            }
+            
+            nav a {
+                margin: 0 10px;
+            }
+            
+            footer .container {
+                flex-direction: column;
+                gap: 20px;
+                text-align: center;
+            }
+            
+            .footer-links {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .footer-links a {
+                margin: 5px 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="logo">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                    <path d="M2 17l10 5 10-5"></path>
+                    <path d="M2 12l10 5 10-5"></path>
+                </svg>
+                DNS Lookup Tool
+            </div>
+            <nav>
+                <a href="#tool">Tool</a>
+                <a href="#history">History</a>
+                <a href="#learn">Learn</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container main-content">
+        <section id="tool" class="card">
+            <h1>DNS Lookup Tool</h1>
+            <p>Query DNS records for any domain or IP address using this simple tool.</p>
+            
+            <form id="dns-lookup-form">
+                <div class="form-group">
+                    <label for="domain">Domain or IP Address</label>
+                    <input type="text" id="domain" placeholder="example.com or 192.168.1.1" required>
+                    <div id="domain-validation" class="validation-message"></div>
+                </div>
+                
+                <div class="input-group">
+                    <div class="form-group">
+                        <label for="record-type">Record Type</label>
+                        <select id="record-type">
+                            <option value="A">A (IPv4 Address)</option>
+                            <option value="AAAA">AAAA (IPv6 Address)</option>
+                            <option value="MX">MX (Mail Exchange)</option>
+                            <option value="TXT">TXT (Text Record)</option>
+                            <option value="CNAME">CNAME (Canonical Name)</option>
+                            <option value="NS">NS (Name Server)</option>
+                            <option value="SOA">SOA (Start of Authority)</option>
+                            <option value="PTR">PTR (Pointer/Reverse Lookup)</option>
+                            <option value="ALL">ALL (All Records)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="dns-resolver">DNS Resolver</label>
+                        <select id="dns-resolver">
+                            <option value="google">Google DNS (8.8.8.8)</option>
+                            <option value="cloudflare">Cloudflare DNS (1.1.1.1)</option>
+                            <option value="opendns">OpenDNS (208.67.222.222)</option>
+                            <option value="custom">Custom Resolver</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div id="custom-resolver-group" class="form-group" style="display: none;">
+                    <label for="custom-resolver">Custom Resolver IP</label>
+                    <input type="text" id="custom-resolver" placeholder="Enter DNS resolver IP address">
+                    <div id="resolver-validation" class="validation-message"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="dnssec-validation"> Enable DNSSEC Validation
+                        <span class="tooltip">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="16" x2="12" y2="12"></line>
+                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                            </svg>
+                            <span class="tooltip-text">Verify if domain is protected with DNSSEC (Domain Name System Security Extensions)</span>
+                        </span>
+                    </label>
+                </div>
+                
+                <button type="submit" class="btn btn-block" id="lookup-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    Lookup
+                </button>
+                
+                <div id="lookup-loader" class="loader"></div>
+            </form>
+
+            <div id="result-area">
+                <div class="result-header">
+                    <h2>Results</h2>
+                    <div class="export-options">
+                        <button id="export-json" class="btn btn-sm">Export JSON</button>
+                        <button id="export-csv" class="btn btn-sm">Export CSV</button>
+                    </div>
+                </div>
+                
+                <div class="tabs">
+                    <div class="tab active" data-tab="formatted">Formatted</div>
+                    <div class="tab" data-tab="raw">Raw</div>
+                </div>
+                
+                <div id="formatted-result" class="tab-content active">
+                    <!-- Results will be populated here -->
+                </div>
+                
+                <div id="raw-result" class="tab-content">
+                    <pre id="raw-output" style="background: #f8f9fa; padding: 15px; border-radius: 6px; overflow-x: auto;"></pre>
+                </div>
+                
+                <div id="dnssec-result" style="display: none;">
+                    <!-- DNSSEC validation results will be shown here -->
+                </div>
+            </div>
+        </section>
+
+        <section id="history" class="card">
+            <h2>Query History</h2>
+            <p>Your recent DNS lookups will appear here. The history is stored locally in your browser.</p>
+            
+            <div id="history-list">
+                <!-- History items will be populated here -->
+                <div class="empty-state" id="empty-history">
+                    <p>No queries yet. Use the lookup tool above to get started.</p>
+                </div>
+            </div>
+            
+            <button id="clear-history" class="btn btn-danger btn-sm" style="margin-top: 15px; display: none;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+                Clear History
+            </button>
+        </section>
+
+        <section id="learn" class="card">
+            <h2>Learn About DNS</h2>
+            <p>The Domain Name System (DNS) is the phonebook of the Internet. It translates human-readable domain names to machine-readable IP addresses.</p>
+            
+            <button class="collapsible">What is DNS?</button>
+            <div class="collapse-content">
+                <p>DNS (Domain Name System) is a hierarchical and decentralized naming system for computers, services, or other resources connected to the Internet or a private network. It translates domain names like example.com into IP addresses like 192.0.2.1 that computers use to identify each other.</p>
+                <p>When you enter a website address in your browser, a DNS lookup process occurs to find the corresponding IP address of the server hosting that website.</p>
+            </div>
+            
+            <button class="collapsible">Common DNS Record Types</button>
+            <div class="collapse-content">
+                <ul style="padding-left: 20px; margin: 15px 0;">
+                    <li><strong>A Record</strong> - Maps a domain name to an IPv4 address</li>
+                    <li><strong>AAAA Record</strong> - Maps a domain name to an IPv6 address</li>
+                    <li><strong>CNAME Record</strong> - Creates an alias from one domain name to another</li>
+                    <li><strong>MX Record</strong> - Specifies mail servers responsible for accepting email</li>
+                    <li><strong>TXT Record</strong> - Contains text information for sources outside your domain</li>
+                    <li><strong>NS Record</strong> - Delegates a DNS zone to use the given authoritative name servers</li>
+                    <li><strong>SOA Record</strong> - Specifies authoritative information about a DNS zone</li>
+                    <li><strong>PTR Record</strong> - Used for reverse DNS lookups, mapping an IP address to a domain name</li>
+                </ul>
+            </div>
+            
+            <button class="collapsible">What is DNSSEC?</button>
+            <div class="collapse-content">
+                <p>DNSSEC (Domain Name System Security Extensions) adds a layer of security to the DNS lookup and exchange processes. It protects against attacks like DNS cache poisoning by digitally signing DNS data to help ensure its validity.</p>
+                <p>When DNSSEC is enabled on a domain, each DNS record is cryptographically signed. This allows the DNS resolver to verify that the data received is identical to the data published by the domain owner and served by the authoritative name server.</p>
+            </div>
+            
+            <button class="collapsible">DNS Lookup Process</button>
+            <div class="collapse-content">
+                <p>A typical DNS lookup involves several steps:</p>
+                <ol style="padding-left: 20px; margin: 15px 0;">
+                    <li>Your computer checks its local cache for a recent answer to the DNS request</li>
+                    <li>If not found locally, it queries the recursive DNS resolver from your ISP or a public resolver</li>
+                    <li>The resolver checks its cache for a recent answer</li>
+                    <li>If not in cache, it starts a recursive query:
+                        <ul>
+                            <li>First asks the root nameservers</li>
+                            <li>Then asks the TLD (Top-Level Domain) nameservers (.com, .org, etc.)</li>
+                            <li>Finally asks the authoritative nameservers for the specific domain</li>
+                        </ul>
+                    </li>
+                    <li>Once the IP is found, it's returned to your computer and stored in cache for future requests</li>
+                </ol>
+            </div>
+        </section>
+    </div>
+
+    <footer>
+        <div class="container">
+            <div class="copyright">
+                &copy; 2025 DNS Lookup Tool
+            </div>
+            <div class="footer-links">
+                <a href="#tool">Tool</a>
+                <a href="#history">History</a>
+                <a href="#learn">Learn</a>
+                <a href="#" id="privacy-link">Privacy Policy</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // DOM elements
+        const form = document.getElementById('dns-lookup-form');
+        const domainInput = document.getElementById('domain');
+        const recordTypeSelect = document.getElementById('record-type');
+        const dnsResolverSelect = document.getElementById('dns-resolver');
+        const customResolverGroup = document.getElementById('custom-resolver-group');
+        const customResolverInput = document.getElementById('custom-resolver');
+        const dnssecCheckbox = document.getElementById('dnssec-validation');
+        const lookupButton = document.getElementById('lookup-btn');
+        const lookupLoader = document.getElementById('lookup-loader');
+        const resultArea = document.getElementById('result-area');
+        const formattedResult = document.getElementById('formatted-result');
+        const rawOutput = document.getElementById('raw-output');
+        const dnssecResult = document.getElementById('dnssec-result');
+        const historyList = document.getElementById('history-list');
+        const emptyHistory = document.getElementById('empty-history');
+        const clearHistoryBtn = document.getElementById('clear-history');
+        const exportJsonBtn = document.getElementById('export-json');
+        const exportCsvBtn = document.getElementById('export-csv');
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        // DNS resolver mapping
+        const DNS_RESOLVERS = {
+            google: '8.8.8.8',
+            cloudflare: '1.1.1.1',
+            opendns: '208.67.222.222'
+        };
+        
+        // Initialize query history
+        let queryHistory = JSON.parse(localStorage.getItem('dnsQueryHistory')) || [];
+        let currentResults = null;
+        
+        // Show/hide custom resolver input based on selection
+        dnsResolverSelect.addEventListener('change', function() {
+            customResolverGroup.style.display = this.value === 'custom' ? 'block' : 'none';
+        });
+        
+        // Tab switching
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(tc => tc.classList.remove('active'));
+                
+                tab.classList.add('active');
+                document.getElementById(`${tab.dataset.tab}-result`).classList.add('active');
+            });
+        });
+        
+        // Collapsible sections
+        const collapsibles = document.querySelectorAll('.collapsible');
+        collapsibles.forEach(coll => {
+            coll.addEventListener("click", function() {
+                this.classList.toggle("active-collapse");
+                const content = this.nextElementSibling;
+                if (content.style.maxHeight) {
+                    content.style.maxHeight = null;
+                } else {
+                    content.style.maxHeight = content.scrollHeight + "px";
+                }
+            });
+        });
+        
+        // Form submission
+        form.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            
+            // Get form values
+            const domain = domainInput.value.trim();
+            const recordType = recordTypeSelect.value;
+            let resolver = dnsResolverSelect.value;
+            
+            if (resolver === 'custom') {
+                resolver = customResolverInput.value.trim();
+            } else {
+                resolver = DNS_RESOLVERS[resolver];
+            }
+            
+            const validateDnssec = dnssecCheckbox.checked;
+            
+            // Validate domain/IP
+            if (!validateDomainOrIP(domain)) {
+                const validationMsg = document.getElementById('domain-validation');
+                validationMsg.style.display = 'block';
+                validationMsg.textContent = 'Please enter a valid domain name or IP address';
+                return;
+            }
+            
+            // Reset validation messages
+            document.getElementById('domain-validation').style.display = 'none';
+            document.getElementById('resolver-validation').style.display = 'none';
+            
+            // Show loading state
+            lookupButton.disabled = true;
+            lookupLoader.style.display = 'block';
+            
+            try {
+                // In a real implementation, this would make a request to a backend API
+                // For this demo, we'll simulate a DNS lookup with mock data
+                const results = await simulateDnsLookup(domain, recordType, resolver, validateDnssec);
+                
+                // Store the results for export
+                currentResults = results;
+                
+                // Display results
+                displayResults(results);
+                
+                // Add to history
+                addToHistory(domain, recordType, results);
+                
+                // Show results area
+                resultArea.style.display = 'block';
+            } catch (error) {
+                console.error("DNS lookup failed:", error);
+                formattedResult.innerHTML = `
+                    <div class="result-card" style="border-left-color: var(--danger)">
+                        <h3>Error</h3>
+                        <p>${error.message || 'Failed to perform DNS lookup. Please try again.'}</p>
+                    </div>
+                `;
+                rawOutput.textContent = JSON.stringify({ error: error.message }, null, 2);
+                resultArea.style.display = 'block';
+            } finally {
+                // Reset loading state
+                lookupButton.disabled = false;
+                lookupLoader.style.display = 'none';
