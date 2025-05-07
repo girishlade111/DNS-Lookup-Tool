@@ -1,0 +1,239 @@
+I'll help you architect a DNS Lookup Tool web application following best practices and modern web development standards. Here's a comprehensive implementation plan:
+
+### 1. Technology Stack
+- **Frontend**: React.js + TypeScript + Vite
+- **Styling**: Tailwind CSS + HeadlessUI
+- **Backend**: Node.js/Express.js (or Cloudflare Workers for edge computing)
+- **DNS Libraries**: `dns-packet` + `dns-over-http-resolver`
+- **Database**: Redis (for caching) + IndexedDB (client-side history)
+- **Infrastructure**: AWS Lambda/Docker + Cloudflare DNS
+
+### 2. Core Features Implementation
+
+**UI Components**:
+```tsx
+// Main lookup form
+function DnsForm() {
+  const [query, setQuery] = useState('');
+  const [recordType, setRecordType] = useState('A');
+  const [resolver, setResolver] = useState('1.1.1.1');
+  const [dnssec, setDnssec] = useState(false);
+
+  const isValidInput = useMemo(() => 
+    validateDomain(query) || validateIP(query), [query]);
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input 
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Enter domain or IP"
+        pattern="^(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$|^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$|^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}$"
+      />
+      
+      <select value={recordType} onChange={(e) => setRecordType(e.target.value)}>
+        {RECORD_TYPES.map(type => (
+          <option key={type} value={type}>{type}</option>
+        ))}
+      </select>
+
+      <DnssecToggle enabled={dnssec} onChange={setDnssec} />
+      <ResolverSelector value={resolver} onChange={setResolver} />
+    </form>
+  );
+}
+```
+
+**DNS Resolution Service**:
+```javascript
+// Backend resolver endpoint
+app.post('/api/resolve', rateLimiter(), async (req, res) => {
+  const { query, type, resolver, dnssec } = req.body;
+  
+  try {
+    const response = await resolveDns({
+      question: { name: query, type },
+      resolvers: [resolver],
+      dnssec,
+    });
+
+    const formatted = formatResponse(response);
+    res.json(formatted);
+  } catch (error) {
+    res.status(400).json({ 
+      error: error.message,
+      code: error.code 
+    });
+  }
+});
+
+// Example resolver using dns-packet
+async function resolveDns({ question, resolvers, dnssec }) {
+  const buf = dnsPacket.encode({
+    type: 'query',
+    id: 1,
+    flags: dnssec ? dnsPacket.RECURSION_DESIRED | dnsPacket.DNSSEC_OK : dnsPacket.RECURSION_DESIRED,
+    questions: [question]
+  });
+
+  const response = await fetch(`https://${resolver}/dns-query`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/dns-message' },
+    body: buf
+  });
+
+  return dnsPacket.decode(new Uint8Array(await response.arrayBuffer()));
+}
+```
+
+### 3. Key Functionality Breakdown
+
+**Input Validation**:
+- Domain: `/^(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/`
+- IPv4: `/^(?:\d{1,3}\.){3}\d{1,3}$/`
+- IPv6: Simplified regex for hybrid addresses
+
+**Result Formatting**:
+```typescript
+interface DnsResult {
+  type: string;
+  name: string;
+  value: string;
+  ttl: number;
+  class: string;
+  priority?: number;
+  dnssec?: {
+    status: 'secure' | 'insecure' | 'bogus';
+    rrsig?: string;
+  };
+}
+```
+
+**Advanced Features**:
+1. **Query History**:
+```javascript
+// Using IndexedDB
+const db = new Dexie('DnsHistory');
+db.version(1).stores({
+  queries: '++id,query,type,result,timestamp'
+});
+
+function saveQuery(queryData) {
+  return db.queries.add({
+    ...queryData,
+    timestamp: Date.now()
+  });
+}
+```
+
+2. **DNSSEC Validation**:
+```javascript
+function verifyDnssec(response) {
+  if (!response.ad) return 'insecure';
+  return response.rcode === 'NOERROR' ? 'secure' : 'bogus';
+}
+```
+
+3. **Export Handlers**:
+```javascript
+function exportCSV(results) {
+  const headers = Object.keys(results[0]).join(',');
+  const rows = results.map(r => Object.values(r).join(','));
+  return `${headers}\n${rows.join('\n')}`;
+}
+
+function exportJSON(results) {
+  return JSON.stringify(results, null, 2);
+}
+```
+
+### 4. Security Measures
+- Input Sanitization:
+  ```javascript
+  function sanitizeInput(input) {
+    return input.replace(/[^a-zA-Z0-9.:-_]/g, '');
+  }
+  ```
+- Rate Limiting:
+  ```javascript
+  const rateLimiter = require('express-rate-limit')({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100 // limit each IP to 100 requests per window
+  });
+  ```
+
+### 5. Performance Optimization
+- Caching Layer:
+  ```javascript
+  async function cachedLookup(query) {
+    const key = `dns:${query}`;
+    const cached = await redis.get(key);
+    if (cached) return JSON.parse(cached);
+    
+    const result = await performLookup(query);
+    await redis.setex(key, 300, JSON.stringify(result)); // 5min TTL
+    return result;
+  }
+  ```
+
+- Web Workers for crypto operations:
+  ```javascript
+  const worker = new Worker('./dnssec.worker.js');
+  worker.postMessage({ response });
+  ```
+
+### 6. Accessibility Implementation
+- Semantic HTML with ARIA labels
+- Keyboard navigation support
+- Color contrast ratio ≥ 4.5:1
+- Screen reader announcements for status changes
+
+### 7. Deployment Strategy
+1. Frontend: Host on Vercel/Netlify with CDN
+2. Backend: Serverless functions (AWS Lambda/Cloudflare Workers)
+3. DNS: Anycast network with Cloudflare
+4. Monitoring: Prometheus + Grafana dashboard
+5. CI/CD: GitHub Actions with Lighthouse testing
+
+### 8. Educational Content Structure
+```markdown
+## DNS Basics
+
+### What is DNS?
+- Domain Name System explanation
+- Analogies to phone book
+
+### Record Types:
+| Type  | Purpose                      | Example           |
+|-------|------------------------------|-------------------|
+| A     | IPv4 Address                 | 192.0.2.1        |
+| AAAA  | IPv6 Address                 | 2001:db8::1      |
+| MX    | Mail Exchange                | mail.example.com |
+| TXT   | Text Records                 | "v=spf1..."      |
+
+[Learn More](#)
+```
+
+### 9. API Integration
+```bash
+# Developer API Endpoint
+POST /api/v1/lookup
+{
+  "query": "example.com",
+  "type": "A",
+  "dnssec": true
+}
+
+# Response
+{
+  "status": "success",
+  "data": [{
+    "type": "A",
+    "value": "93.184.216.34",
+    "ttl": 300,
+    "dnssec": "secure"
+  }]
+}
+```
+
+This architecture provides a scalable, secure foundation while maintaining user-friendliness. The implementation can be progressively enhanced with additional features like DNS query analysis, latency measurements, or DNS-over-HTTPS/QUIC support.
